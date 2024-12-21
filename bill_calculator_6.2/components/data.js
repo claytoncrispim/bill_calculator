@@ -37,7 +37,7 @@ const mortgage = new Bill(
 const gas = new Bill(
     "bill04",
     "Gas",
-    59.15,
+    60.02,
     false,
     "AIB"
 );
@@ -45,7 +45,7 @@ const gas = new Bill(
 const electricity = new Bill(
     "bill05",
     "Electricity",
-    60.02,
+    52.40,
     false,
     "AIB"
 );
@@ -77,7 +77,7 @@ const discoveryPlus = new Bill(
 const virginMedia = new Bill(
     "bill09",
     "Virgin Media",
-    74.99,
+    78.99,
     false,
     "BOI"
 );
@@ -93,6 +93,6 @@ const hboMax = new Bill(
 
 //Adding objects into an array
 
-const billsArray = [managementFee, propertyTax, mortgage, gas, electricity, netflix, virginMedia, hboMax];
+const billsArray = [managementFee, propertyTax, mortgage, gas, electricity, netflix, virginMedia];
 
 export default billsArray;

@@ -191,7 +191,7 @@ const totalAib = sumArray(amountAib);
 const totalBoi = sumArray(amountBoi);
 const subTotal = totalAib + totalBoi;
 console.log("Sub-total", subTotal);
-const finalBalance = totalAib/3 - totalBoi/3;
+const finalBalance = totalAib/2 - totalBoi/2;
 
 
 /**
@@ -229,17 +229,12 @@ const totalAmount = new Total(
       }</span></li>
       <p> Amount due:
       <li class="feature total__amount-aib">Amount AIB due to Clayton:<span class="amount__number"> ${
-        formatter("en-US", "EUR", totalAib /3)
+        formatter("en-US", "EUR", totalAib /2)
       }</span></li>
       <li class="feature total__amount-boi">Amount BOI due to Francisco:<span class="amount__number"> ${
-        formatter("en-US", "EUR", totalBoi /3)
+        formatter("en-US", "EUR", totalBoi /2)
       }</span></li>
-            <li class="feature total__amount-aib">Amount AIB due to Adrian:<span class="amount__number"> ${
-        formatter("en-US", "EUR", totalAib /3)
-      }</span></li>
-      <li class="feature total__amount-boi">Amount BOI due to Adrian:<span class="amount__number"> ${
-        formatter("en-US", "EUR", totalBoi /3)
-      }</span></li>
+
       <li class="feature total__due-amount">Due Amount:<span class="amount__number__highlight"> ${
         formatter("en-US", "EUR", finalBalance)
       }</span></li>        
