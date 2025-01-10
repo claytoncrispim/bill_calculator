@@ -45,7 +45,7 @@ const gas = new Bill(
 const electricity = new Bill(
     "bill05",
     "Electricity",
-    52.40,
+    83.61,
     false,
     "AIB"
 );
