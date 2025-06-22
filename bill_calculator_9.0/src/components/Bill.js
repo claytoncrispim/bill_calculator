@@ -2,20 +2,20 @@
  * Bill Object
  *
  * - Type
+ * - Payment method
  * - Amount
  * - Status
- * - Debit account
  */
 
 class Bill {
   constructor( 
     type, 
-    acc, 
+    method, 
     amount, 
     status
   ) {
     this.type = type;
-    this.acc = acc;
+    this.method = method;
     this.amount = amount;
     this.status = status;
   }
