@@ -1,50 +1,19 @@
-/**
- * Bill Object
- *
- * - Type
- * - Payment method
- * - Amount
- * - Status
- */
+// src/components/Bill.js
 
-class Bill {
-  constructor( 
-    type, 
-    method, 
-    amount, 
-    status
-  ) {
-    this.type = type;
-    this.method = method;
-    this.amount = amount;
-    this.status = status;
-  }
-  updateAmount(amount) {
-    this.amount = amount;
+export default class Bill {
+  constructor({ type, name, paymentMethod, amount, currency, status }) {
+    // We use a unique ID to manage each bill later (e.g., for deleting)
+    this.id = Date.now().toString(); // Simple unique ID based on timestamp
 
-    return this.amount;
-  }
-  updateStatus(status) {
-    if (status === "Paid") {
-        return true;
-    } else if (status === "Unpaid") {
-        return false;
-    }
-  }
-  checkEmpty(property) {
-    const defaultText = ["The field ", " cannot be empty!"];
-    const textProperties = ["bill type", "bank", "amount", "status"];
-    switch (property) {
-      case "Select the bill type":
-        alert(defaultText[0]+textProperties[0]+defaultText[1]);
-        location.reload();
-        break;
-      case "Select the bank":
-        alert(defaultText[0]+textProperties[1]+defaultText[1]);
-        location.reload();
-        break; 
-    }
+    this.type = type; // e.g., 'Energy', 'Broadband', 'Streaming'
+    this.name = name; // Specifically for the streaming service name, e.g., 'Netflix'
+    this.paymentMethod = paymentMethod; // e.g., 'Credit Card'
+    this.status = status || 'Pending'; // Default to 'Pending' if not provided
+
+    // The amount is now an object to hold both value and currency
+    this.amount = {
+      value: parseFloat(amount) || 0, // Ensure amount is a number
+      currency: currency || 'EUR' // Default to EUR
+    };
   }
 }
-
-export default Bill;
