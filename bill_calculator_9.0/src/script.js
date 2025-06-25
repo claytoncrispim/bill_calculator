@@ -8,6 +8,8 @@ import Bill from "./components/Bill.js";
 // --- STATE ---
 // It's an array that loads bills from localStorage or starts empty.
 let bills = loadBillsFromLocalStorage();
+let currentFilter = 'All'; // Possible values: 'All', 'Paid', 'Unpaid', 'Pending'
+let currentSort = 'default';
 
 
 // --- DOM ELEMENTS ---
@@ -27,7 +29,10 @@ const editAmountInput = document.querySelector('#edit-amount');
 const editStatusSelect = document.querySelector('#edit-status');
 // This creates a JavaScript instance of the Bootstrap modal component
 const editModal = new bootstrap.Modal(editModalEl);
-
+// Filter buttons container
+const filterButtonsContainer = document.querySelector('#filter-buttons-container');
+// Add this new DOM reference
+const sortBySelect = document.querySelector('#sort-by');
 
 // --- FUNCTIONS ---
 /**
@@ -50,61 +55,83 @@ function handleBillTypeChange() {
 }
 
 /**
- * Renders the list of bills to the page.
+ * Renders the list of bills to the page, applying the current filter.
  */
 function renderBills() {
-  // Define colors for each status using Bootstrap's text/background color classes
   const statusColors = {
     Paid: 'success',
     Unpaid: 'danger',
     Pending: 'warning'
   };
 
-  // First, clear the existing list
-  billsListContainer.innerHTML = '';
-
-  // Check if the bills array is empty
-  if (bills.length === 0) {
-    billsListContainer.innerHTML = '<p class="text-center text-muted">Your bill list is empty. Add a bill to get started!</p>';
-    return; // Exit the function if there's nothing to render
+  // 1. Determine which bills to show based on the current filter
+  let filteredBills;
+  if (currentFilter === 'All') {
+    filteredBills = bills; // Show all bills
+  } else {
+    // Show only the bills whose status matches the current filter
+    filteredBills = bills.filter(bill => bill.status === currentFilter);
   }
 
-  // Loop through the 'bills' array and create an HTML card for each bill
-  const billsHtml = bills.map(bill => {
-    // Determine the name to display (either streaming/other name or just the type)
+    // 2. NEW: Sorting
+  // We create a copy with [...filteredBills] before sorting to avoid changing the original order.
+  const sortedAndFilteredBills = [...filteredBills].sort((a, b) => {
+    switch (currentSort) {
+      case 'amount-high-low':
+        return b.amount.value - a.amount.value;
+      case 'amount-low-high':
+        return a.amount.value - b.amount.value;
+      case 'name-az':
+        // localeCompare is the standard way to sort strings alphabetically.
+        const nameA = a.name || a.type;
+        const nameB = b.name || b.type;
+        return nameA.localeCompare(nameB);
+      default:
+        return 0; // 'default' case does no sorting.
+    }
+  });
+
+  // 3. Clear the existing list (same as before)
+  billsListContainer.innerHTML = '';
+
+  // 4. Check if the final list is empty (now checks sortedAndFilteredBills)
+  if (sortedAndFilteredBills.length === 0) {
+    billsListContainer.innerHTML = '<p class="text-center text-muted">No bills to display.</p>';
+    return;
+  }
+
+  // 5. Loop through the 'sortedAndFilteredBills' array to create HTML
+  const billsHtml = sortedAndFilteredBills.map(bill => {
+    // ...The .map() callback is exactly the same as before...
     const displayName = bill.name || bill.type;
-
-    // Create the HTML structure for each bill
-    // Using template literals for cleaner HTML generation
-  return `
-    <div class="card mb-3">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <h5 class="card-title">${displayName}</h5>
-            <h6 class="card-subtitle mb-2 text-muted">${bill.type} Bill</h6>
+    return `
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="card-title">${displayName}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">${bill.type} Bill</h6>
+            </div>
+            <span class="badge bg-${statusColors[bill.status]}">${bill.status}</span>
           </div>
-          <span class="badge bg-${statusColors[bill.status]}">${bill.status}</span>
+          <p class="card-text">
+            <strong>Amount:</strong> ${bill.amount.value.toFixed(2)} ${bill.amount.currency}
+          </p>
+          <p class="card-text">
+            <strong>Payment Method:</strong> ${bill.paymentMethod}
+          </p>
+          <button class="btn btn-outline-secondary btn-sm edit-btn me-2" data-bill-id="${bill.id}">
+            Edit
+          </button>
+          <button class="btn btn-outline-danger btn-sm delete-btn" data-bill-id="${bill.id}">
+            Delete Bill
+          </button>
         </div>
-        <p class="card-text">
-          <strong>Amount:</strong> ${bill.amount.value.toFixed(2)} ${bill.amount.currency}
-        </p>
-        <p class="card-text">
-          <strong>Payment Method:</strong> ${bill.paymentMethod}
-        </p>
-        <button class="btn btn-outline-secondary btn-sm edit-btn me-2" data-bill-id="${bill.id}">
-          Edit
-        </button>
-        <button class="btn btn-outline-danger btn-sm delete-btn" data-bill-id="${bill.id}">
-          Delete Bill
-        </button>
-
       </div>
-    </div>
-  `;
-    }).join(''); // Join the array of HTML strings into one single string
+    `;
+  }).join('');
 
-  // Set the inner HTML of our container to the generated HTML
+  // 5. Set the inner HTML of our container to the generated HTML
   billsListContainer.innerHTML = billsHtml;
 }
 
@@ -266,7 +293,6 @@ function loadBillsFromLocalStorage() {
 billForm.addEventListener('submit', handleSubmit);
 billTypeSelect.addEventListener('change', handleBillTypeChange);
 
-
 billsListContainer.addEventListener('click', (event) => {
   // Check if a DELETE button was clicked
   if (event.target.classList.contains('delete-btn')) {
@@ -289,6 +315,33 @@ billsListContainer.addEventListener('click', (event) => {
 
 // Add this line
 editBillForm.addEventListener('submit', handleEditSubmit);
+
+// Filter buttons event listener
+filterButtonsContainer.addEventListener('click', (event) => {
+  // Check if a filter button was clicked
+  if (event.target.classList.contains('filter-btn')) {
+    // 1. Remove the 'active' class from all filter buttons
+    const buttons = filterButtonsContainer.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // 2. Add the 'active' class to the button that was just clicked
+    event.target.classList.add('active');
+    
+    // 3. Update our filter state with the value from the data-filter attribute
+    currentFilter = event.target.dataset.filter;
+
+    // 4. Re-render the bills list to apply the new filter
+    renderBills();
+  }
+});
+
+// Sort by dropdown event listener
+sortBySelect.addEventListener('change', (event) => {
+  // 1. Update our sort state with the new value from the dropdown
+  currentSort = event.target.value;
+  // 2. Re-render the bills list to apply the new sort order
+  renderBills();
+});
 
 // --- INITIALIZATION ---
 // This function runs once when the page first loads.
