@@ -6,8 +6,8 @@ import Bill from "./components/Bill.js";
 // console.log(Bill);
 
 // --- STATE ---
-// It's an array that will hold all the bill objects.
-let bills = [];
+// It's an array that loads bills from localStorage or starts empty.
+let bills = loadBillsFromLocalStorage();
 
 
 // --- DOM ELEMENTS ---
@@ -19,6 +19,14 @@ const totalUnpaidDisplay = document.querySelector('#total-unpaid');
 const billTypeSelect = document.querySelector('#billType');
 const streamingNameContainer = document.querySelector('#streamingName-container');
 const otherTypeContainer = document.querySelector('#otherType-container');
+// Modal elements for editing bills
+const editModalEl = document.querySelector('#editBillModal');
+const editBillForm = document.querySelector('#edit-bill-form');
+const editBillIdInput = document.querySelector('#edit-bill-id');
+const editAmountInput = document.querySelector('#edit-amount');
+const editStatusSelect = document.querySelector('#edit-status');
+// This creates a JavaScript instance of the Bootstrap modal component
+const editModal = new bootstrap.Modal(editModalEl);
 
 
 // --- FUNCTIONS ---
@@ -84,7 +92,9 @@ function renderBills() {
         <p class="card-text">
           <strong>Payment Method:</strong> ${bill.paymentMethod}
         </p>
-        
+        <button class="btn btn-outline-secondary btn-sm edit-btn me-2" data-bill-id="${bill.id}">
+          Edit
+        </button>
         <button class="btn btn-outline-danger btn-sm delete-btn" data-bill-id="${bill.id}">
           Delete Bill
         </button>
@@ -143,6 +153,7 @@ function handleSubmit(event) {
 
   // 5. Add the new bill to our 'bills' array (our application state).
   bills.push(newBill);
+  saveBillsToLocalStorage();
 
   // 6. Log the results to the console to verify.
   console.log('New bill added:', newBill);
@@ -155,8 +166,8 @@ function handleSubmit(event) {
   handleBillTypeChange();
   
   // 9. UPDATE THE WEBPAGE
-  renderBills(); // This line is now active!
-  calculateAndRenderTotal(); // We'll activate this one in the next step.
+  renderBills();
+  calculateAndRenderTotal();
 }
 
 /**
@@ -166,10 +177,87 @@ function handleSubmit(event) {
 function deleteBill(id) {
   // Filter the bills array, keeping every bill except the one with the matching id.
   bills = bills.filter(bill => bill.id !== id);
+  
+  saveBillsToLocalStorage();
 
   // Re-render the UI to reflect the changes.
   renderBills();
   calculateAndRenderTotal();
+}
+
+/**
+ * Opens the edit modal and populates it with data from a specific bill.
+ * @param {object} bill The bill object to edit.
+ */
+function openEditModal(bill) {
+  // 1. Fill the form fields with the bill's existing data.
+  editBillIdInput.value = bill.id;
+  editAmountInput.value = bill.amount.value;
+  editStatusSelect.value = bill.status;
+
+  // 2. Programmatically open the Bootstrap modal.
+  editModal.show();
+}
+
+/**
+ * Handles the submission of the edit form.
+ * @param {Event} event The form submission event.
+ */
+function handleEditSubmit(event) {
+  // 1. THIS IS THE CRUCIAL FIX: Prevent the page from reloading.
+  event.preventDefault();
+
+  // 2. Get the updated data from the modal's form.
+  const formData = new FormData(editBillForm);
+  const updatedData = Object.fromEntries(formData.entries());
+
+  // 3. Find the bill in our main 'bills' array and update it.
+  bills = bills.map(bill => {
+    if (bill.id === updatedData.id) {
+      return {
+        ...bill,
+        amount: {
+          ...bill.amount,
+          value: parseFloat(updatedData.amount)
+        },
+        status: updatedData.status
+      };
+    }
+    return bill;
+  });
+
+  saveBillsToLocalStorage();
+
+  // 4. Close the modal.
+  editModal.hide();
+
+  // 5. Re-render the entire UI to show the changes.
+  renderBills();
+  calculateAndRenderTotal();
+}
+
+
+/**
+ * Saves the current 'bills' array to the browser's localStorage.
+ */
+function saveBillsToLocalStorage() {
+  // We must convert our JavaScript array into a JSON string to store it.
+  const billsJson = JSON.stringify(bills);
+  // Save the string in localStorage under the key 'myBills'.
+  localStorage.setItem('myBills', billsJson);
+}
+
+/**
+ * Loads bills from localStorage and returns them as a JavaScript array.
+ * @returns {Array} The array of bills from storage, or an empty array.
+ */
+function loadBillsFromLocalStorage() {
+  // Get the saved JSON string from localStorage.
+  const savedBillsJson = localStorage.getItem('myBills');
+  
+  // If there are saved bills, parse the string back into an array.
+  // Otherwise, return an empty array for the first visit.
+  return savedBillsJson ? JSON.parse(savedBillsJson) : [];
 }
 
 // --- EVENT LISTENERS ---
@@ -180,16 +268,27 @@ billTypeSelect.addEventListener('change', handleBillTypeChange);
 
 
 billsListContainer.addEventListener('click', (event) => {
-  // Check if the clicked element has the 'delete-btn' class
+  // Check if a DELETE button was clicked
   if (event.target.classList.contains('delete-btn')) {
-    // Get the bill ID from the 'data-bill-id' attribute
+    const billId = event.target.dataset.billId;
+    deleteBill(billId);
+  } 
+  // Check if an EDIT button was clicked
+  else if (event.target.classList.contains('edit-btn')) {
     const billId = event.target.dataset.billId;
     
-    // Call our delete function
-    deleteBill(billId);
+    // Find the bill object in the array that matches the ID
+    const billToEdit = bills.find(bill => bill.id === billId);
+
+    // If the bill is found, open the modal with its data
+    if (billToEdit) {
+      openEditModal(billToEdit);
+    }
   }
 });
 
+// Add this line
+editBillForm.addEventListener('submit', handleEditSubmit);
 
 // --- INITIALIZATION ---
 // This function runs once when the page first loads.
