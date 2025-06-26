@@ -1,7 +1,14 @@
-/**Bill Calculator 9.0
- * By Clayton Crispim
+/**
+ * @file script.js
+ * @description Main JavaScript file for the Bill Calculator application. This file handles all application state, DOM manipulation, event handling, and core logic.
+ * @author [Clayton Crispim]
+ * @version 9.0.0
+ * @date 2025-06-26
+ *
+ * Distributed under the MIT License.
  */
 
+// --- IMPORTS ---
 import Bill from "./components/Bill.js";
 
 
@@ -89,20 +96,19 @@ function renderBills() {
   const statusColors = {
     Paid: 'success',
     Unpaid: 'danger',
-    Pending: 'warning'
+    Pending: 'warning',
   };
 
-  // 1. Determine which bills to show based on the current filter
+  // 1. FILTERING: Create a temporary array based on the current filter.
   let filteredBills;
   if (currentFilter === 'All') {
-    filteredBills = bills; // Show all bills
+    filteredBills = bills;
   } else {
-    // Show only the bills whose status matches the current filter
     filteredBills = bills.filter(bill => bill.status === currentFilter);
   }
 
-  // 2. Sort the filtered bills based on the current sort order.
-  // A copy is created with [...filteredBills] to avoid modifying the original array order.
+  // 2. SORTING: Sort the new 'filteredBills' array.
+  // A copy is created with [...filteredBills] to ensure the original bills array order is preserved.
   const sortedAndFilteredBills = [...filteredBills].sort((a, b) => {
     switch (currentSort) {
       case 'amount-high-low':
@@ -114,20 +120,18 @@ function renderBills() {
         const nameB = b.name || b.type;
         return nameA.localeCompare(nameB);
       default:
-        return 0; // 'default' case does no sorting.
+        return 0; // 'default' case applies no sorting.
     }
   });
 
-  // 3. Clear the existing list to prepare for re-rendering.
+  // 3. RENDER: The rest of the function now uses the final 'sortedAndFilteredBills' array.
   billsListContainer.innerHTML = '';
 
-  // 4. If the final list is empty, display a message and exit the function.
   if (sortedAndFilteredBills.length === 0) {
     billsListContainer.innerHTML = '<p class="text-center text-muted">No bills to display.</p>';
     return;
   }
 
-  // 5. Generate the HMTL for each bill card using the .map() method.
   const billsHtml = sortedAndFilteredBills.map(bill => {
     const displayName = bill.name || bill.type;
     return `
@@ -157,7 +161,6 @@ function renderBills() {
     `;
   }).join('');
 
-  // 6. Set the inner HTML of our container to the generated bill cards.
   billsListContainer.innerHTML = billsHtml;
 }
 
@@ -189,111 +192,109 @@ function calculateAndRenderTotal() {
   totalUnpaidDisplay.textContent = `€${totals.Unpaid.toFixed(2)}`;
 }
 
-
-
-
-
+/**
+ * Shows or hides conditional form fieldds ('Streaming Name' or 'Other Type')
+ * based on the selection in the 'Bill Type' dropdown.
+ */
 function handleBillTypeChange() {
   const selectedValue = billTypeSelect.value;
 
-  // First, hide both containers by default
+  // By default, reset and hide bith conditional containers
   streamingNameContainer.classList.add('d-none');
   otherTypeContainer.classList.add('d-none');
 
+  // Show the relevant container based on the selection
   if (selectedValue === 'Streaming') {
-    // If 'Streaming' is selected, remove 'd-none' to show the streaming container
     streamingNameContainer.classList.remove('d-none');
   } else if (selectedValue === 'Other') {
-    // If 'Other' is selected, remove 'd-none' to show the "other" container
     otherTypeContainer.classList.remove('d-none');
   }
 }
 
 
-
-
-
 /**
- * Handles the form submission event.
- * @param {Event} event The form submission event.
- */
-function handleSubmit(event) {
-  // 1. Prevent the default browser behavior of reloading the page.
-  event.preventDefault();
-  
-  // 2. Read the data from the form using the FormData API.
-  const formData = new FormData(billForm);
-  const billData = Object.fromEntries(formData.entries());
-
-  // 3. Handle the conditional 'name' field.
-  billData.name = billData['name-streaming'] || billData['name-other'];
-
-  // 4. Create a new Bill instance using our class.
-  const newBill = new Bill(billData);
-
-  // 5. Add the new bill to our 'bills' array (our application state).
-  bills.push(newBill);
-  saveBillsToLocalStorage();
-
-  // 6. Log the results to the console to verify.
-  console.log('New bill added:', newBill);
-  console.log('All current bills:', bills);
-  
-  // 7. Reset the form for the next entry.
-  billForm.reset();
-
-  // 8. Manually trigger the change handler to hide any conditional fields.
-  handleBillTypeChange();
-  
-  // 9. UPDATE THE WEBPAGE
-  renderBills();
-  calculateAndRenderTotal();
-}
-
-/**
- * Deletes a bill from the state and updates the UI.
- * @param {string} id The ID of the bill to delete.
+ * Deletes a bill from the state, saves the change to localStorage,
+ * and triggers a UI update.
+ * @param {string} id The unique ID of the bill to delete.
  */
 function deleteBill(id) {
-  // Filter the bills array, keeping every bill except the one with the matching id.
+  // Filter the bills array, creating a new array that excludes the bill with the matching id.
   bills = bills.filter(bill => bill.id !== id);
-  
+  // Save the newly modified array to localStorage.
   saveBillsToLocalStorage();
-
   // Re-render the UI to reflect the changes.
   renderBills();
   calculateAndRenderTotal();
 }
 
+
 /**
- * Opens the edit modal and populates it with data from a specific bill.
- * @param {object} bill The bill object to edit.
+ * Opens the edit modal and populates its form fields with the data from a specific bill.
+ * @param {object} bill The bill object to be edited.
  */
 function openEditModal(bill) {
-  // 1. Fill the form fields with the bill's existing data.
+  // 1. Fill the hidden ID input and visible form fields with the bill's existing data.
   editBillIdInput.value = bill.id;
   editAmountInput.value = bill.amount.value;
   editStatusSelect.value = bill.status;
 
-  // 2. Programmatically open the Bootstrap modal.
+  // 2. Programmatically open the Bootstrap modal using the instance we created.
   editModal.show();
 }
 
+
 /**
- * Handles the submission of the edit form.
- * @param {Event} event The form submission event.
+ * Handles the submission of the main 'Add Bill' form.
+ * @param {Event} event The form submission event object provided by the browser.
+ */
+function handleSubmit(event) {
+  // 1. Prevent the default browser behavior of reloading the page.
+  event.preventDefault();
+  
+  // 2. Read all data from the form into a simple object.
+  const formData = new FormData(billForm);
+  const billData = Object.fromEntries(formData.entries());
+
+  // 3. Consolidate the conditional 'name' fields into a single 'name' property.
+  billData.name = billData['name-streaming'] || billData['name-other'];
+
+  // 4. Create a new Bill instance using our class constructor.
+  const newBill = new Bill(billData);
+
+  // 5. Add the new bill to our main state array.
+  bills.push(newBill);
+  saveBillsToLocalStorage();
+
+  // 6. Log the results to the console for debugging purposes.
+  console.log('New bill added:', newBill);
+  console.log('All current bills:', bills);
+  
+  // 7. Reset the form for the next entry and hide conditional fields
+  billForm.reset();
+  handleBillTypeChange();
+  
+  // 8. Re-render the UI to show the new bill.
+  renderBills();
+  calculateAndRenderTotal();
+}
+
+/**
+ * Handles the submission of the 'Edit Bill' form within the modal.
+ * @param {Event} event The form submission event object.
  */
 function handleEditSubmit(event) {
-  // 1. THIS IS THE CRUCIAL FIX: Prevent the page from reloading.
+  // 1. Prevent the page from reloading.
   event.preventDefault();
 
   // 2. Get the updated data from the modal's form.
   const formData = new FormData(editBillForm);
   const updatedData = Object.fromEntries(formData.entries());
 
-  // 3. Find the bill in our main 'bills' array and update it.
+  // 3. Find the bill in our main array and update it using .map().
   bills = bills.map(bill => {
+    // If the bill's ID matches the one from the hidden form input...
     if (bill.id === updatedData.id) {
+      // ...return a new object with the old properties spread (...) and the new ones overwritten.
       return {
         ...bill,
         amount: {
@@ -303,86 +304,83 @@ function handleEditSubmit(event) {
         status: updatedData.status
       };
     }
+    // Otherwise, return the bill unchanged.
     return bill;
   });
 
+  // 4. Save the updated array, close the modal, and re-render the UI.
   saveBillsToLocalStorage();
-
-  // 4. Close the modal.
   editModal.hide();
-
-  // 5. Re-render the entire UI to show the changes.
   renderBills();
   calculateAndRenderTotal();
 }
 
 
-
-
 // --- EVENT LISTENERS ---
-// This is where we tell our functions to run when the user interacts with the page.
+// Attaching our handler functions to specific events on our DOM elements.
 
+// Handles the submission of the main 'Add Bill' form.
 billForm.addEventListener('submit', handleSubmit);
+
+// Handles the submission of the 'Edit Bill' modal form.
+editBillForm.addEventListener('submit', handleEditSubmit);
+
+// Shows/hides conditional fields when the bill type dropdown changes.
 billTypeSelect.addEventListener('change', handleBillTypeChange);
 
+// Applies the selected sort order when the sort dropdown changes.
+sortBySelect.addEventListener('change', (event) => {
+  currentSort = event.target.value;
+  renderBills();
+});
+
+// Uses event delegation to handle clicks on dynamic 'edit' and 'delete' buttons.
 billsListContainer.addEventListener('click', (event) => {
   // Check if a DELETE button was clicked
   if (event.target.classList.contains('delete-btn')) {
     const billId = event.target.dataset.billId;
     deleteBill(billId);
-  } 
+  }
   // Check if an EDIT button was clicked
   else if (event.target.classList.contains('edit-btn')) {
     const billId = event.target.dataset.billId;
-    
-    // Find the bill object in the array that matches the ID
     const billToEdit = bills.find(bill => bill.id === billId);
-
-    // If the bill is found, open the modal with its data
     if (billToEdit) {
       openEditModal(billToEdit);
     }
   }
 });
 
-// Add this line
-editBillForm.addEventListener('submit', handleEditSubmit);
 
-// Filter buttons event listener
+// Applies the selected filter when a filter button is clicked.
 filterButtonsContainer.addEventListener('click', (event) => {
-  // Check if a filter button was clicked
+  // Check if a button with the 'filter-btn' class was clicked
   if (event.target.classList.contains('filter-btn')) {
-    // 1. Remove the 'active' class from all filter buttons
+    // This part handles the visual "active" state of the button
     const buttons = filterButtonsContainer.querySelectorAll('.filter-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
-
-    // 2. Add the 'active' class to the button that was just clicked
     event.target.classList.add('active');
     
-    // 3. Update our filter state with the value from the data-filter attribute
+    // This part updates our application's state
     currentFilter = event.target.dataset.filter;
 
-    // 4. Re-render the bills list to apply the new filter
+    // Finally, this re-draws the list with the new filter applied
     renderBills();
   }
 });
 
-// Sort by dropdown event listener
-sortBySelect.addEventListener('change', (event) => {
-  // 1. Update our sort state with the new value from the dropdown
-  currentSort = event.target.value;
-  // 2. Re-render the bills list to apply the new sort order
-  renderBills();
-});
 
 // --- INITIALIZATION ---
-// This function runs once when the page first loads.
+
+/**
+ * The main entry point for the application.
+ * This function is called once when the script first loads.
+ */
 function init() {
-  console.log('Application has started!');
-  // Render the initial empty state of the list and total.
+  // Render the initial state of the bills list and totals from localStorage.
   renderBills();
   calculateAndRenderTotal();
 }
 
-// Kick off the application.
+// Kick off the application by calling the init function.
 init();
