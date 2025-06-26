@@ -1,61 +1,89 @@
-/**Bill Calculator 8.0
+/**Bill Calculator 9.0
  * By Clayton Crispim
  */
 
 import Bill from "./components/Bill.js";
-// console.log(Bill);
+
 
 // --- STATE ---
-// It's an array that loads bills from localStorage or starts empty.
+// The single source of truth for the application's data.
+
+/**
+ * The main array holding all bill objects.
+ * It is initialized by loading data from localStorage on startup.
+ */
 let bills = loadBillsFromLocalStorage();
-let currentFilter = 'All'; // Possible values: 'All', 'Paid', 'Unpaid', 'Pending'
+
+/**
+ * The current filter applied to the list.
+ *  * @type {'All' | 'Paid' | 'Unpaid' | 'Pending'}
+ */
+let currentFilter = 'All';
+
+/**
+ * The current sort order being applied to the list.
+ *  @type {'default' | 'amount-high-low' | 'amount-low-high' | 'name-az'}
+ * */
 let currentSort = 'default';
 
 
 // --- DOM ELEMENTS ---
+// Caching references to DOM elements to avoid repeated queries in our functions.
+
+// Main form and bill list container
 const billForm = document.querySelector('#bill-form');
 const billsListContainer = document.querySelector('#bills-list');
+
+// Display elements for categorized totals
 const totalPaidDisplay = document.querySelector('#total-paid');
 const totalPendingDisplay = document.querySelector('#total-pending');
 const totalUnpaidDisplay = document.querySelector('#total-unpaid');
+
+// Form controls for filtering and sorting
+const filterButtonsContainer = document.querySelector('#filter-buttons-container');
 const billTypeSelect = document.querySelector('#billType');
+const sortBySelect = document.querySelector('#sort-by');
+
+// Containers for conditional fields in the main form
 const streamingNameContainer = document.querySelector('#streamingName-container');
 const otherTypeContainer = document.querySelector('#otherType-container');
-// Modal elements for editing bills
+
+// Elements related to the "Edit Bill" modal
 const editModalEl = document.querySelector('#editBillModal');
 const editBillForm = document.querySelector('#edit-bill-form');
 const editBillIdInput = document.querySelector('#edit-bill-id');
 const editAmountInput = document.querySelector('#edit-amount');
 const editStatusSelect = document.querySelector('#edit-status');
-// This creates a JavaScript instance of the Bootstrap modal component
+
+/**
+ * A JavaScript instance of the Bootstrap Modal class, created fron our modal element.
+ * We use this instance to programmatically control the modal (e.g., `editModal.show()`).
+ */
 const editModal = new bootstrap.Modal(editModalEl);
-// Filter buttons container
-const filterButtonsContainer = document.querySelector('#filter-buttons-container');
-// Add this new DOM reference
-const sortBySelect = document.querySelector('#sort-by');
+
 
 // --- FUNCTIONS ---
 /**
- * Shows or hides conditional form fields based on the selected bill type.
+ * Saves the current 'bills' array to the browser's localStorage.
+ * The array is converted to a JSON string because localStorage can only store strings.
  */
-function handleBillTypeChange() {
-  const selectedValue = billTypeSelect.value;
-
-  // First, hide both containers by default
-  streamingNameContainer.classList.add('d-none');
-  otherTypeContainer.classList.add('d-none');
-
-  if (selectedValue === 'Streaming') {
-    // If 'Streaming' is selected, remove 'd-none' to show the streaming container
-    streamingNameContainer.classList.remove('d-none');
-  } else if (selectedValue === 'Other') {
-    // If 'Other' is selected, remove 'd-none' to show the "other" container
-    otherTypeContainer.classList.remove('d-none');
-  }
+function saveBillsToLocalStorage() {
+  const billsJson = JSON.stringify(bills);
+  localStorage.setItem('myBills', billsJson);
 }
 
 /**
- * Renders the list of bills to the page, applying the current filter.
+ * Loads bills from localStorage, parses the JSON string back into an array,
+ * and returns it. If no bills are found in localStorage, it returns an empty array.
+ * @returns {Array<object>} The array of bill objects from storage.
+ */
+function loadBillsFromLocalStorage() {
+  const savedBillsJson = localStorage.getItem('myBills');
+  return savedBillsJson ? JSON.parse(savedBillsJson) : [];
+}
+
+/**
+ * Renders the list of bills to the page, applying the current filter and sort order.
  */
 function renderBills() {
   const statusColors = {
@@ -73,8 +101,8 @@ function renderBills() {
     filteredBills = bills.filter(bill => bill.status === currentFilter);
   }
 
-    // 2. NEW: Sorting
-  // We create a copy with [...filteredBills] before sorting to avoid changing the original order.
+  // 2. Sort the filtered bills based on the current sort order.
+  // A copy is created with [...filteredBills] to avoid modifying the original array order.
   const sortedAndFilteredBills = [...filteredBills].sort((a, b) => {
     switch (currentSort) {
       case 'amount-high-low':
@@ -82,7 +110,6 @@ function renderBills() {
       case 'amount-low-high':
         return a.amount.value - b.amount.value;
       case 'name-az':
-        // localeCompare is the standard way to sort strings alphabetically.
         const nameA = a.name || a.type;
         const nameB = b.name || b.type;
         return nameA.localeCompare(nameB);
@@ -91,18 +118,17 @@ function renderBills() {
     }
   });
 
-  // 3. Clear the existing list (same as before)
+  // 3. Clear the existing list to prepare for re-rendering.
   billsListContainer.innerHTML = '';
 
-  // 4. Check if the final list is empty (now checks sortedAndFilteredBills)
+  // 4. If the final list is empty, display a message and exit the function.
   if (sortedAndFilteredBills.length === 0) {
     billsListContainer.innerHTML = '<p class="text-center text-muted">No bills to display.</p>';
     return;
   }
 
-  // 5. Loop through the 'sortedAndFilteredBills' array to create HTML
+  // 5. Generate the HMTL for each bill card using the .map() method.
   const billsHtml = sortedAndFilteredBills.map(bill => {
-    // ...The .map() callback is exactly the same as before...
     const displayName = bill.name || bill.type;
     return `
       <div class="card mb-3">
@@ -131,12 +157,14 @@ function renderBills() {
     `;
   }).join('');
 
-  // 5. Set the inner HTML of our container to the generated HTML
+  // 6. Set the inner HTML of our container to the generated bill cards.
   billsListContainer.innerHTML = billsHtml;
 }
 
+
 /**
- * Calculates totals for each status category and renders them to the page.
+ * Calculates totals for each status category (Paid, Unpaid, Pending)
+ * and renders them ton the appropriate display elements on the page.
  */
 function calculateAndRenderTotal() {
   // 1. Set up the initial shape of our totals object.
@@ -146,19 +174,44 @@ function calculateAndRenderTotal() {
     Pending: 0
   };
 
-  // 2. Use .reduce() to calculate the totals for each category.
+  // 2. Use .reduce() to iterate through all bills and sum amounts into the correct category.
   const totals = bills.reduce((acc, bill) => {
-    // Add the bill's amount to the correct category in the accumulator (acc).
-    // For example, if bill.status is 'Paid', it adds to acc['Paid'].
-    acc[bill.status] += bill.amount.value;
+    // Check if the status is a valid key in our accumulator object.
+    if (acc.hasOwnProperty(bill.status)) {
+      acc[bill.status] += bill.amount.value;
+    }
     return acc; // Return the updated accumulator for the next iteration.
-  }, initialTotals); // Start with our initialTotals object.
+  }, initialTotals);
 
-  // 3. Update the text content for each total display element.
+  // 3. Update the text content for each total display element on the page.
   totalPaidDisplay.textContent = `€${totals.Paid.toFixed(2)}`;
   totalPendingDisplay.textContent = `€${totals.Pending.toFixed(2)}`;
   totalUnpaidDisplay.textContent = `€${totals.Unpaid.toFixed(2)}`;
 }
+
+
+
+
+
+function handleBillTypeChange() {
+  const selectedValue = billTypeSelect.value;
+
+  // First, hide both containers by default
+  streamingNameContainer.classList.add('d-none');
+  otherTypeContainer.classList.add('d-none');
+
+  if (selectedValue === 'Streaming') {
+    // If 'Streaming' is selected, remove 'd-none' to show the streaming container
+    streamingNameContainer.classList.remove('d-none');
+  } else if (selectedValue === 'Other') {
+    // If 'Other' is selected, remove 'd-none' to show the "other" container
+    otherTypeContainer.classList.remove('d-none');
+  }
+}
+
+
+
+
 
 /**
  * Handles the form submission event.
@@ -264,28 +317,7 @@ function handleEditSubmit(event) {
 }
 
 
-/**
- * Saves the current 'bills' array to the browser's localStorage.
- */
-function saveBillsToLocalStorage() {
-  // We must convert our JavaScript array into a JSON string to store it.
-  const billsJson = JSON.stringify(bills);
-  // Save the string in localStorage under the key 'myBills'.
-  localStorage.setItem('myBills', billsJson);
-}
 
-/**
- * Loads bills from localStorage and returns them as a JavaScript array.
- * @returns {Array} The array of bills from storage, or an empty array.
- */
-function loadBillsFromLocalStorage() {
-  // Get the saved JSON string from localStorage.
-  const savedBillsJson = localStorage.getItem('myBills');
-  
-  // If there are saved bills, parse the string back into an array.
-  // Otherwise, return an empty array for the first visit.
-  return savedBillsJson ? JSON.parse(savedBillsJson) : [];
-}
 
 // --- EVENT LISTENERS ---
 // This is where we tell our functions to run when the user interacts with the page.
