@@ -2,6 +2,13 @@
 
 An intuitive and responsive single-page application designed to help users easily manage, track, and calculate their monthly bills in a visually organized way. This project demonstrates modern JavaScript principles, including state management, dynamic UI updates, and local data persistence.
 
+## Live Demo
+
+*[Link to be added later]*
+
+## Screenshot
+
+![A screenshot of the Bill Calculator application showing the main interface with a list of bills and totals.](./screenshot.png)
 
 ## Features
 
@@ -16,7 +23,6 @@ An intuitive and responsive single-page application designed to help users easil
 - **Responsive UI:** The layout is fully responsive and works on desktop and mobile devices, built with Bootstrap 5.
 - **Conditional Form Fields:** The user interface intelligently shows or hides specific input fields based on the user's selections (e.g., for "Streaming" or "Other" bill types).
 
-
 ## Technologies Used
 
 - **HTML5:** Semantic markup for the application structure.
@@ -26,7 +32,6 @@ An intuitive and responsive single-page application designed to help users easil
 - **Web Storage API (`localStorage`):** To provide persistent data storage on the client-side, ensuring data is not lost on page refresh.
 - **Git & GitHub:** For version control and source code management.
 - **GitHub Codespaces:** For the cloud-based development environment.
-
 
 ## Setup and Installation
 
@@ -55,13 +60,3 @@ You need to have Node.js and npm installed on your machine. You can download the
     npm start
     ```
     This will open the application in your default browser.
-
-
-## Live Demo
-
-*[Link to your live, deployed application will go here. We will discuss how to deploy your site as a final step.]*
-
-
-## Screenshot
-
-![A screenshot of the Bill Calculator application showing the main interface with a list of bills and totals.](./screenshot.png)
